@@ -45,4 +45,3 @@ export function getReportData() {
     console.error("Error fetching report data:", error);
   }
 }
-getReportData();
