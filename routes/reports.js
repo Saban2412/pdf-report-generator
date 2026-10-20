@@ -8,15 +8,36 @@ import { generatePdfReport } from "../src/pdfService.js";
 
 const router = express.Router();
 
+// POST /reports
 router.post("/reports", async (req, res, next) => {
   try {
+    const { force } = req.body || {};
+
+    if (!force) {
+      const existingReport = db
+        .prepare(
+          `SELECT * FROM reports 
+           WHERE DATE(created_at) = DATE('now') 
+           ORDER BY id DESC LIMIT 1`,
+        )
+        .get();
+
+      if (existingReport) {
+        return res.status(200).json({
+          id: existingReport.id,
+          file: `/reports/${existingReport.id}/file`,
+          message: "Report already generated today. Returned existing file.",
+        });
+      }
+    }
+
     const reportData = getReportData();
     const htmlContent = generateHtml(reportData);
 
-    const dummyPath = "pending";
+    // Ubacujemo red u bazu da dobijemo novi ID
     const insertStmt = db
       .prepare(`INSERT INTO reports (path) VALUES (?)`)
-      .run(dummyPath);
+      .run("pending");
     const reportId = insertStmt.lastInsertRowid;
 
     const pdfFileName = `${reportId}.pdf`;
@@ -30,16 +51,17 @@ router.post("/reports", async (req, res, next) => {
       reportId,
     );
 
-    res.status(201).json({
+    return res.status(201).json({
       id: reportId,
       file: `/reports/${reportId}/file`,
     });
   } catch (error) {
-    console.error("Error generating report:", error.message);
+    console.error("Error in POST /reports:", error.message);
     next(error);
   }
 });
 
+// GET /reports/:id
 router.get("/reports/:id", (req, res) => {
   try {
     const { id } = req.params;
@@ -55,11 +77,11 @@ router.get("/reports/:id", (req, res) => {
       file: `/reports/${report.id}/file`,
     });
   } catch (error) {
-    console.error("Error fetching report record:", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
+// GET /reports/:id/file
 router.get("/reports/:id/file", (req, res) => {
   try {
     const { id } = req.params;
@@ -77,7 +99,6 @@ router.get("/reports/:id/file", (req, res) => {
 
     res.sendFile(absolutePdfPath);
   } catch (error) {
-    console.error("Error serving PDF file:", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 });
