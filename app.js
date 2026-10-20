@@ -1,15 +1,16 @@
 import express from "express";
+import { initializeDatabase } from "./data/db.js";
+import reportRoutes from "./routes/reports.js";
+
 const app = express();
-app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
-app.get("/health", (req, res) => {
-  res.status(200).json({ status: "UP" });
-});
-app.get("/", (req, res) => {
-  res.send("Welcome to the PDF Report Generator API");
-});
+initializeDatabase();
+
+app.use(express.json());
+
+app.use(reportRoutes);
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });

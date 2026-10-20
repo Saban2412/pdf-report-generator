@@ -38,8 +38,6 @@ export function getReportData() {
       top_products: topProductsStmt,
       orders_per_day: ordersPerDayStmt,
     };
-
-    console.log("Report Data:", jsonData);
     return jsonData;
   } catch (error) {
     console.error("Error fetching report data:", error);
